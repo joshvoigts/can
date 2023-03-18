@@ -1,0 +1,13 @@
+[package]
+name = "can"
+version = "0.1.0"
+edition = "2021"
+authors = ["Josh Voigts"]
+description = "Cross-platform command line tool for moving files to the trash"
+repository = "https://github.com/joshvoigts/can"
+license = "MIT"
+keywords = ["can", "recycling", "trash"]
+categories = ["command-line-utilities", "filesystem"]
+publish = ["crates.io"]
+
+[dependencies]
