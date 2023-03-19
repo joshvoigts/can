@@ -40,7 +40,7 @@ fn main() {
       },
    ];
 
-   let mut args: BTreeSet<String> = env::args().collect();
+   let mut args: BTreeSet<String> = env::args().skip(1).collect();
    let mut opts = HashMap::new();
 
    for flag in &flags {
@@ -57,8 +57,6 @@ fn main() {
          }
       }
    }
-
-   args.pop_first();
 
    if args.len() > 0 {
       move_files_to_trash(&opts, &args);
@@ -122,7 +120,7 @@ fn help(opts: &HashMap<String, &Opt>) {
    process::exit(0);
 }
 
-fn empty(_opts: &HashMap<String, &Opt>) {
+fn empty(opts: &HashMap<String, &Opt>) {
    match env::consts::OS {
       "macos" => {
          let as_cmd = "tell application \"Finder\" to empty trash";
