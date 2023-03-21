@@ -1,18 +1,15 @@
 use std::collections::HashMap;
 use std::fmt;
 
+pub type Opts = HashMap<&'static str, Opt>;
+
 #[derive(Clone)]
 pub struct Opt {
    pub description: &'static str,
-   pub handler: Option<fn(&HashMap<String, &Opt>)>,
+   pub enabled: bool,
+   pub handler: Option<fn(&Opts)>,
    pub long: &'static str,
    pub short: &'static str,
-}
-
-impl Opt {
-   pub fn name(&self) -> String {
-      self.long[2..].to_string()
-   }
 }
 
 impl fmt::Debug for Opt {
