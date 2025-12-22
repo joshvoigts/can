@@ -1,0 +1,10 @@
+edition = "2021"
+max_width = 70
+style_edition = "2021"
+tab_spaces = 2
+
+# # Nightly config to enable once they are stable
+# format_strings = true
+# group_imports = "one"
+# imports_granularity = "module"
+# wrap_comments = true
