@@ -1,105 +1,75 @@
-use std::collections::BTreeSet;
 use std::env;
 use std::fs::{self, DirEntry};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::str::from_utf8;
 
-use crate::opt::*;
-
 mod fail;
-mod opt;
 mod p;
 
+use optz::{Opt, Optz};
+
 fn main() {
-  let mut opts = Opts::new();
-  opts.insert(
-    "help",
-    Opt {
-      description: "Show help",
-      enabled: false,
-      handler: Some(help),
-      long: "--help",
-      short: "-h",
-    },
-  );
-  opts.insert(
-    "empty",
-    Opt {
-      description: "Empty trash",
-      enabled: false,
-      handler: Some(empty),
-      long: "--empty",
-      short: "-e",
-    },
-  );
-  opts.insert(
-    "list",
-    Opt {
-      description: "List files in trash",
-      enabled: false,
-      handler: Some(list),
-      long: "--list",
-      short: "-l",
-    },
-  );
-  opts.insert(
-    "verbose",
-    Opt {
-      description: "Run verbosely",
-      enabled: false,
-      handler: None,
-      long: "--verbose",
-      short: "-v",
-    },
-  );
+  let optz = Optz::from_args("can", env::args().collect())
+    .option(
+      Opt::flag("verbose")
+        .short("-v")
+        .description("Run verbosely")
+    )
+    .option(
+      Opt::flag("list")
+        .short("-l")
+        .description("List trash contents")
+    )
+    .option(
+      Opt::flag("empty")
+        .short("-E")
+        .description("Empty trash")
+    )
+    .parse()
+    .unwrap();
 
-  let mut args: BTreeSet<String> = env::args().skip(1).collect();
-
-  for mut opt in opts.values_mut() {
-    if args.remove(opt.short) {
-      opt.enabled = true;
-    }
-    if args.remove(opt.long) {
-      opt.enabled = true;
-    }
+  let verbose = match optz.get::<bool>("verbose") {
+    Ok(Some(v)) => v,
+    Ok(None) => false,
+    Err(_) => false,
+  };
+  
+  if optz.has("list").unwrap_or(false) {
+    list(&optz, verbose);
+    process::exit(0);
   }
-
-  for opt in opts.values() {
-    if !opt.enabled {
-      continue;
-    }
-    if let Some(handler) = opt.handler {
-      handler(&opts);
-      process::exit(0);
-    }
+  
+  if optz.has("empty").unwrap_or(false) {
+    empty(&optz, verbose);
+    process::exit(0);
   }
-
-  if args.len() > 0 {
-    move_files_to_trash(&opts, &args);
+  
+  // Get file arguments (non-option arguments)
+  if !optz.rest.is_empty() {
+    move_files_to_trash(&optz, verbose);
+  } else {
+    help(&optz);
   }
-
-  help(&opts);
 }
 
-fn help(opts: &Opts) {
+fn help(optz: &Optz) {
   println!("Usage: can [options] file ...");
-  for opt in opts.values() {
-    println!("  {}, {:<10} {}", opt.short, opt.long, opt.description)
+  for opt in &optz.options {
+    let short_str = opt.short.as_deref().unwrap_or("");
+    println!("  {}, {:<10} {}", short_str, opt.long, opt.description.as_deref().unwrap_or(""))
   }
 }
 
-fn empty(opts: &Opts) {
+fn empty(_optz: &Optz, verbose: bool) {
   match env::consts::OS {
     "macos" => {
       let as_cmd = "tell application \"Finder\" to empty trash";
       let res = run_applescript(as_cmd.to_string());
       match res {
         Ok(_) => {
-          if let Some(opt) = opts.get("verbose") {
-            if opt.enabled {
-              println!("Trash emptied");
-            }
+          if verbose {
+            println!("Trash emptied");
           }
         }
         Err(_) => (), // Ignore, trash probably already empty
@@ -109,7 +79,7 @@ fn empty(opts: &Opts) {
   }
 }
 
-fn list(_opts: &Opts) {
+fn list(_optz: &Optz, _verbose: bool) {
   let files = get_files(&get_trash_path());
   for file in files {
     match file.file_name().into_string() {
@@ -174,9 +144,9 @@ fn get_trash_path() -> PathBuf {
   }
 }
 
-fn move_files_to_trash(opts: &Opts, args: &BTreeSet<String>) {
+fn move_files_to_trash(optz: &Optz, verbose: bool) {
   let mut to_delete: Vec<String> = Vec::new();
-  for arg in args {
+  for arg in &optz.rest {
     let path = Path::new(&arg);
     if !path.exists() {
       fail!("can: {}: No such file or directory", arg);
@@ -207,11 +177,9 @@ fn move_files_to_trash(opts: &Opts, args: &BTreeSet<String>) {
     }
     _ => fail!("can: OS not supported"),
   }
-  if let Some(opt) = opts.get("verbose") {
-    if opt.enabled {
-      for arg in args {
-        println!("{}", arg);
-      }
+  if verbose {
+    for arg in &optz.rest {
+      println!("{}", arg);
     }
   }
   process::exit(0);

@@ -1,6 +1,6 @@
 [package]
 name = "can"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Josh Voigts"]
 description = "Cross-platform command line tool for moving files to the trash"
@@ -11,3 +11,4 @@ categories = ["command-line-utilities", "filesystem"]
 publish = ["crates.io"]
 
 [dependencies]
+optz = { version = "0.10.0" }
