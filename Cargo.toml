@@ -1,6 +1,6 @@
 [package]
 name = "can-cli"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Josh Voigts"]
 description = "Cross-platform command line tool for moving files to the trash"

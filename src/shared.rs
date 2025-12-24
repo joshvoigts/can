@@ -168,7 +168,7 @@ pub fn get_home_trash_path() -> PathBuf {
       let xdg = BaseDirectories::new();
       let home = xdg
         .get_data_home()
-        .unwrap_or_else(|| fail!("can: can't find HOME directory"));
+        .unwrap_or_else(|| fail!("can: Can't find HOME directory"));
       PathBuf::from(home).join("Trash")
     }
     _ => fail!("can: OS not supported"),
@@ -189,7 +189,7 @@ pub fn move_files_to_trash(optz: &Optz, verbose: bool) {
     // Canonicalize to resolve symlinks and relative components
     match fs::canonicalize(path) {
       Ok(abs_path) => to_delete.push(abs_path.display().to_string()),
-      Err(e) => fail!("can: {}: canonicalize failed: {}", arg, e),
+      Err(e) => fail!("can: {}: Canonicalize failed: {}", arg, e),
     }
   }
 

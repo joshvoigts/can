@@ -340,40 +340,21 @@ pub fn move_file_to_trash(files: &[String]) {
     let dest_path = files_dir.join(&dest_name);
     let info_path = info_dir.join(format!("{}.trashinfo", dest_name));
 
-    // Create trashinfo file atomically
-    if let Err(err) =
-      create_atomic_trashinfo(&info_path, source_path, &trash_path)
-    {
-      fail!("can: Failed to create trashinfo: {}", err);
-    }
-
-    // Ensure info file doesn't already exist before moving/copying
+    // Ensure no name collision before we touch the filesystem
     if info_path.exists() || dest_path.exists() {
-      fail!("can: trash collision for {}", file_path);
+      fail!("can: Trash collision for {}", file_path);
     }
 
-    // Move file to trash
-    if let Err(_err) = fs::rename(source_path, &dest_path) {
-      // If rename fails (cross-filesystem), try copy then remove
+    // Move the file (or copy+remove on cross-fs rename failure)
+    let move_res = fs::rename(source_path, &dest_path);
+    if let Err(_rename_err) = move_res {
+      // Cross‑filesystem: copy then delete the original
       if let Err(e) = copy_file_to_trash(source_path, &dest_path) {
-        // Clean up the info file since move failed
-        let _ = fs::remove_file(&info_path);
         fail!("can: Failed to move {} to trash: {}", file_path, e);
       }
-
-      // Check again for collision after successful copy
-      if info_path.exists() || dest_path.exists() {
-        // Clean up partial copy and metadata
-        let _ = fs::remove_file(&dest_path);
-        let _ = fs::remove_file(&info_path);
-        fail!("can: trash collision for {}", file_path);
-      }
-
-      // Remove original file only after confirming copy succeeded
       if let Err(e) = fs::remove_file(source_path) {
-        // Best-effort cleanup of partial copy and metadata
+        // Cleanup the partially copied file
         let _ = fs::remove_file(&dest_path);
-        let _ = fs::remove_file(&info_path);
         fail!(
           "can: Failed to remove original file {}: {}",
           file_path,
@@ -382,7 +363,16 @@ pub fn move_file_to_trash(files: &[String]) {
       }
     }
 
-    // Update directorysizes cache
+    // Create .trashinfo file atomically after move succeeds
+    if let Err(err) =
+      create_atomic_trashinfo(&info_path, source_path, &trash_path)
+    {
+      // If we cannot write the metadata, roll back the moved file
+      let _ = fs::remove_file(&dest_path);
+      fail!("can: Failed to create trashinfo: {}", err);
+    }
+
+    // Update directory‑sizes cache for moved directories
     if source_path.is_dir() {
       update_directorysizes_cache(&trash_path, &dest_name);
     }
