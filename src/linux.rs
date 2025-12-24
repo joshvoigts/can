@@ -352,7 +352,12 @@ pub fn move_file_to_trash(files: &[String]) {
       if let Err(e) = copy_file_to_trash(source_path, &dest_path) {
         fail!("can: Failed to move {} to trash: {}", file_path, e);
       }
-      if let Err(e) = fs::remove_file(source_path) {
+      let remove_res = if source_path.is_dir() {
+        fs::remove_dir_all(source_path)
+      } else {
+        fs::remove_file(source_path)
+      };
+      if let Err(e) = remove_res {
         // Cleanup the partially copied file
         let _ = fs::remove_file(&dest_path);
         fail!(
@@ -368,7 +373,11 @@ pub fn move_file_to_trash(files: &[String]) {
       create_atomic_trashinfo(&info_path, source_path, &trash_path)
     {
       // If we cannot write the metadata, roll back the moved file
-      let _ = fs::remove_file(&dest_path);
+      let _ = if dest_path.is_dir() {
+        fs::remove_dir_all(&dest_path)
+      } else {
+        fs::remove_file(&dest_path)
+      };
       fail!("can: Failed to create trashinfo: {}", err);
     }
 
