@@ -5,6 +5,12 @@ to `rm`.
 
 ## Install
 
+### Cargo
+
+    cargo install can
+
+### Homebrew
+
     brew tap joshvoigts/can
     brew install can
 
@@ -17,7 +23,7 @@ to `rm`.
         -E, --empty                      Empty trash
         -h, --help                       Show this message
 
-### Release
+### Release Instructions
 
     cargo build --release
     cd ~/builds/release
