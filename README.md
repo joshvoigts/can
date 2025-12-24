@@ -7,7 +7,7 @@ to `rm`.
 
 ### Cargo
 
-    cargo install can
+    cargo install can-cli
 
 ### Homebrew
 
