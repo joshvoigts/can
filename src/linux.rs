@@ -358,10 +358,14 @@ pub fn move_file_to_trash(files: &[String]) {
         fs::remove_file(source_path)
       };
       if let Err(e) = remove_res {
-        // Cleanup the partially copied file
-        let _ = fs::remove_file(&dest_path);
+        // Cleanup the partially copied file/directory
+        let _ = if dest_path.is_dir() {
+          fs::remove_dir_all(&dest_path)
+        } else {
+          fs::remove_file(&dest_path)
+        };
         fail!(
-          "can: Failed to remove original file {}: {}",
+          "can: Failed to remove original path {}: {}",
           file_path,
           e
         );
